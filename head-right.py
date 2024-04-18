@@ -20,7 +20,7 @@ def rotate_and_tilt_head(pan_degrees, tilt_degrees):
     point = JointTrajectoryPoint()
     # Assign the new positions for pan (head_1_joint) and tilt (head_2_joint)
     point.positions = [pan_radians, tilt_radians]  
-    point.time_from_start = rospy.Duration(5)  # Adjust the duration as needed for your setup
+    point.time_from_start = rospy.Duration(3)  # Adjust the duration as needed for your setup
     trajectory.points.append(point)
     
     goal.trajectory = trajectory
@@ -41,7 +41,7 @@ def run():
     head_client.wait_for_server()
 
     # Rotate the head 30 degrees to the right and tilt it 30 degrees down
-    rotate_and_tilt_head(-30, -60)  # Note: Assuming negative tilt means downwards
+    rotate_and_tilt_head(-30, -55)  # Note: Assuming negative tilt means downwards
 
 if __name__ == "__main__":
     rospy.init_node('rotate_and_tilt_head')
