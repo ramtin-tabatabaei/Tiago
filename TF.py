@@ -104,7 +104,7 @@ class CoordinateTranslator:
         # self.head_rot()
         if int(self.marker_id[0]) < 5:
             self.message_count += 1
-            print(self.marker_id[0])
+            # print(self.marker_id[0])
             print(f"Message number{self.message_count}")
 
             if abs(float(rot_euler[0])) < self.aruco_pose[int(self.marker_id[0])-1, 4]:
@@ -116,22 +116,26 @@ class CoordinateTranslator:
                 self.aruco_pose[int(self.marker_id[0])-1, 5] = rot_euler[1]
                 self.aruco_pose[int(self.marker_id[0])-1, 6] = rot_euler[2]
 
-        if self.message_count>=200 and all(abs(x) < 0.1 for x in self.aruco_pose[:, 4]):
+        if self.message_count>=200:
+            print(self.aruco_pose)
+            if all(abs(x) < 0.1 for x in self.aruco_pose[:, 4]):
+                print("TF Function was Successful")
+            else:
+                print("TF Function failed")
             for i in range(4):
                 self.csv_writer.writerow(self.aruco_pose[i])
-            print(self.aruco_pose)
             self.csv_file.close()
             rospy.signal_shutdown("Done")
             return
         
-        if self.message_count>=200:
-            self.counter +=1
-            print(self.aruco_pose)
-            if self.counter == 8:
-                self.counter = 1
-            self.message_count = 0
-            self.head_rot()
-            rospy.sleep(3)
+        # if self.message_count>=200:
+        #     self.counter +=1
+        #     print(self.aruco_pose)
+        #     if self.counter == 8:
+        #         self.counter = 1
+        #     self.message_count = 0
+        #     self.head_rot()
+        #     rospy.sleep(3)
 
             # return
         

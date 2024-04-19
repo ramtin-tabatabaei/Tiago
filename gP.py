@@ -10,9 +10,6 @@ import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from math import pi, inf
 import csv
-import sys
-from pal_interaction_msgs.msg import TtsAction, TtsGoal
-
 
 # Subscriber callback for updating current joint positions
 def joint_state_callback(msg):
@@ -63,7 +60,7 @@ def update_gripper_position(increment):
     gripper_client.wait_for_result()
 
 
-def update_head_position(pan_degrees, tilt_degrees, duration):
+def update_head_position(pan_degrees, tilt_degrees):
     global current_head_position
     
     # Convert degrees to radians for ROS
@@ -74,16 +71,17 @@ def update_head_position(pan_degrees, tilt_degrees, duration):
     trajectory = JointTrajectory()
     trajectory.joint_names = ['head_1_joint', 'head_2_joint']
     point = JointTrajectoryPoint()
-    point.positions =  [pan_radians, tilt_radians] 
-    point.time_from_start = rospy.Duration(duration)
+    point.positions = current_head_position
+    point.time_from_start = rospy.Duration(0.5)
     trajectory.points.append(point)
     goal.trajectory = trajectory
     
     head_client.send_goal(goal)
     head_client.wait_for_result()
 
-
-def apply_joint_positions(joint_position_dict, duration):
+    
+    
+def apply_joint_positions(joint_position_dict):
     # Create a JointTrajectory message
     traj_msg = JointTrajectory()
     #traj_msg.header.stamp = rospy.Time.now()
@@ -97,7 +95,7 @@ def apply_joint_positions(joint_position_dict, duration):
         all_position[i] = joint_position_dict[name]
     
     point.positions = all_position
-    point.time_from_start = rospy.Duration(duration)  # Adjust based on your requirements
+    point.time_from_start = rospy.Duration(5)  # Adjust based on your requirements
     traj_msg.points.append(point)
 
     # print("message", traj_msg)
@@ -113,7 +111,7 @@ def get_current_end_effector_pose():
 
 
 
-def move_to_goal_position(goal_position, goal_orientation, duration):
+def move_to_goal_position(goal_position, goal_orientation):
     global desired_frame, current_joint_positions, ik_solver_pos
     # Set desired frame based on the goal position and orientation
     desired_position = Vector(*goal_position)
@@ -124,7 +122,7 @@ def move_to_goal_position(goal_position, goal_orientation, duration):
     ik_result = ik_solver_pos.CartToJnt(current_joint_positions, desired_frame, desired_joint_positions)
     if ik_result >= 0:  # If IK solution is found
         joint_positions_dict = {joint_names[i]: desired_joint_positions[i] for i in range(number_of_joints)}
-        apply_joint_positions(joint_positions_dict, duration)
+        apply_joint_positions(joint_positions_dict)
     else:
         rospy.logerr("Failed to find an IK solution for the desired position.")
 
@@ -177,28 +175,9 @@ def minimum_rotation_radians(initial_angle, final_angles):
     return min_rotation, best_direction
 
 
-class GenerationFunction():
-    def __init__(self, message):
-        self.message = message
-        self.client = actionlib.SimpleActionClient('/tts', TtsAction)
-        self.client.wait_for_server()
-        self.goal = TtsGoal()
-    def speak(self):
-        try:
-            self.goal.rawtext.text = self.message
-            self.goal.rawtext.lang_id = "en_GB"
-            self.client.send_goal_and_wait(self.goal)
-        except Exception as e:
-            rospy.logerr(f"Failed to say Hi: {e}")
-            return "Error trying to say Hi."
-
-
 def run():
     global ik_solver_pos, desired_joint_positions, joint_names, number_of_joints, fk_solver, arm_pub, gripper_client, desired_frame, current_gripper_position, current_joint_positions, current_head_position, head_client
     global data
-
-
-
     # Load the robot model from the parameter server
     robot_urdf = URDF.from_parameter_server()
 
@@ -209,8 +188,10 @@ def run():
         exit(1)
 
     # Specify the chain: from base link to end-effector link
+    # base_link = "torso_lift_link"
     base_link = "torso_lift_link"
     end_effector_link = "gripper_link"
+    # end_effector_link = "gripper_grasping_frame"
 
     chain = kdl_tree.getChain(base_link, end_effector_link)
 
@@ -232,7 +213,6 @@ def run():
     current_gripper_position = [0, 0]
     current_head_position = [0, 0]
 
-
     # Publisher for controlling the robot's arm
     arm_pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
 
@@ -251,65 +231,43 @@ def run():
     rospy.wait_for_message('/joint_states', JointState)
     rospy.sleep(1.0)
 
+   
+    
 
 
-    System_input = int(sys.argv[1])
-    failure_number = int((System_input-1)/4)
-    object_number = System_input % 4
-    if object_number ==0:
-        object_number = 4
-    print("object_number: ", object_number)
-    print("failure_number: ", failure_number)
 
-
-    print(object_number)
+    # # Initialize desired_frame with the current end-effector pose
+    Destination = [[1, 0.743, 0.26], [2, 0.735, 0.27], [3, 0.735, 0.27], [4, 0.595, 0.05484949356562053]]
+    # desired_frame = get_current_end_effector_pose()
+    object_number = 1
     X, Y= data[object_number-1][1], data[object_number-1][2]
     # X, Y= 0.8, 0
 
-    X_3D = 0.8935*X+0.0055*Y+0.064
+    X_3D = 0.8881*X+0.0234*Y+0.074
     Y_3D = 0.0455*X+0.9401*Y-0.0194
     X_2D = 0.8846*X+0.07
     Y_2D = 0.9319*Y+0.01
-    X_Poly = 3.8927*(X) +0.3982*(Y) -2.2658*X**2 -0.4216*X*Y +0.2446*Y**2 - 0.9099
+    X_Poly = 4.9204*(X) +0.4149*(Y) -2.9245*X**2 -0.1754*X*Y +0.5984*Y**2 -1.2798
     yaw = data[object_number-1][6]
-    X_pose = X_3D
-    Y_pose = Y_3D
-
-    # Destination Locations
-    #Square
-    final_square = [-3*pi/4, -pi/4, pi/4, 3*pi/4] #Orientation
-    Destination_square = [0.753, 0.248]
-    #Triangle 1
-    final_triangle1 = [pi/2]
-    Destination_triangle1 = [Destination_square[0]+0.0327+0.003, Destination_square[1]+0.0496+0.007]
-    #Triangle 2
-    final_triangle2 = [-pi/2]
-    Destination_triangle2 = [Destination_square[0]-0.0327, Destination_square[1]+0.0496+0.005]
-    #Trapezold
+    # Example usage
+    final_square = [-3*pi/4, -pi/4, pi/4, 3*pi/4] #1
     final_trapezold = [-pi/4, 3*pi/4] #4
-    # Destination_trapezold = [0.595, 0.05484949356562053]
-    Destination_trapezold = [Destination_square[0]-0.1675+0.013, Destination_square[1]-0.1903-0.005]
-
-    Destination_failure = [0.6, 0.2]
-    
+    final_triangle1 = [pi/2]
+    final_triangle2 = [-pi/2]
 
     if object_number == 1:
         rotation, direction = minimum_rotation_radians(yaw, final_square)
-        Destination = Destination_square
     elif object_number == 4:
         rotation, direction = minimum_rotation_radians(yaw, final_trapezold)
-        Destination = Destination_trapezold
     elif object_number == 2 or object_number == 3:
         rotation1, direction1 = minimum_rotation_radians(yaw, final_triangle1)
         rotation2, direction2 = minimum_rotation_radians(yaw, final_triangle2)
         if rotation1 < rotation2:
             rotation = rotation1
             direction = direction1
-            Destination = Destination_triangle1
         else:
             rotation = rotation2
             direction = direction2
-            Destination = Destination_triangle2
 
     # rotation, direction = minimum_rotation_radians(yaw, final)
 
@@ -336,72 +294,51 @@ def run():
 
     print(yaw_des)
 
-    # update_head_position(-15, -15, 2)
-
     # # Specify the goal position and orientation for the end-effector
     # goal_position = [0.924*X+0.0298*Y+0.0491, -0.0453*X+1.0084*Y+0.0714, -0.2]  # Adjust as needed
-    # goal_position = [X, Y, -0.2]  # Adjust as needed
+    # goal_position = [X, Y, -0.24]  # Adjust as needed
     # goal_orientation = [0, 0, yaw_des]  # Adjust as needed
     # move_to_goal_position(goal_position, goal_orientation)
 
 
-
-    update_head_position(-20, -40, 2)
-    message = "It is my turn"
-    gen_func = GenerationFunction(message)
-    gen_func.speak()
-    goal_orientation = [0, 0, yaw_goal]  # Adjust as needed
-    goal_position = [X_pose, Y_pose, -0.2]  # Adjust as needed
-    update_gripper_position(0.09)
-    move_to_goal_position(goal_position, goal_orientation, 5)
-    rospy.sleep(5)
-    goal_position = [X_pose, Y_pose, -0.248]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 5)
-    rospy.sleep(5)
-    update_gripper_position(0.03)
-    rospy.sleep(1)
-    if failure_number==1:
-        rospy.sleep(15)
-        message = "Sorry for delay"
-        gen_func = GenerationFunction(message)
-        gen_func.speak()
-    goal_position = [X_pose, Y_pose, -0.18]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 5)
-    rospy.sleep(5)
-    if failure_number == 2:
-        goal_position = [Destination_failure[0], Destination_failure[1], -0.18]  # Adjust as needed
-        goal_orientation = [0, 0, yaw_des]  # Adjust as needed
-        move_to_goal_position(goal_position, goal_orientation, 10)
-        update_head_position(10, -40, 4)
-        rospy.sleep(10)
-        goal_position = [Destination_failure[0], Destination_failure[1], -0.247]  # Adjust as needed
-        move_to_goal_position(goal_position, goal_orientation, 5)
-        rospy.sleep(6)
-        message = "Sorry I made a mistake"
-        gen_func = GenerationFunction(message)
-        gen_func.speak()
-        goal_position = [Destination_failure[0], Destination_failure[1], -0.18]  # Adjust as needed
-        move_to_goal_position(goal_position, goal_orientation, 5)
-        rospy.sleep(6)
-    goal_position = [Destination[0], Destination[1], -0.18]  # Adjust as needed
+    # goal_orientation = [0, 0, yaw_goal]  # Adjust as needed
+    # goal_position = [X_3D, Y_3D, -0.2]  # Adjust as needed
+    # update_gripper_position(0.09)
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(5)
+    # goal_position = [X_3D, Y_3D, -0.245]  # Adjust as needed
+    # # update_gripper_position(0.09)
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(5)
+    # # goal_position = [X_3D, Y_3D, -0.245]  # Adjust as needed
+    # update_gripper_position(0.02)
+    # # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(1)
+    # goal_position = [X_3D, Y_3D, -0.18]  # Adjust as needed
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(5)
+    # goal_position = [Destination[object_number-1][1], Destination[object_number-1][2], -0.18]  # Adjust as needed
     goal_orientation = [0, 0, yaw_des]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 10)
-    update_head_position(10, -40, 4)
-    rospy.sleep(10)
-    goal_position = [Destination[0], Destination[1], -0.247]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 5)
-    rospy.sleep(6)
-    update_gripper_position(0.05)
-    rospy.sleep(1)
-    goal_position = [Destination[0], Destination[1], -0.18]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 5)
-
-
-
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(5)
+    # goal_position = [Destination[object_number-1][1], Destination[object_number-1][2], -0.243]  # Adjust as needed
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(5)
+    # update_gripper_position(0.04)
+    # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(1)
+    # update_gripper_position(0.09)
+    # # move_to_goal_position(goal_position, goal_orientation)
+    # rospy.sleep(1)
+    # goal_position = [Destination[object_number-1][1], Destination[object_number-1][2], -0.18]  # Adjust as needed
+    # move_to_goal_position(goal_position, goal_orientation)
 
 
     # goal_position = [X, Y, -0.2]  # Adjust as needed
     # print(yaw_des)
+
+
+    # goal_orientation = [0, 0, yaw_goal]  # Adjust as needed
 
     # Move to the specified goal position
     # move_to_goal_position(goal_position, goal_orientation)
@@ -416,18 +353,28 @@ def run():
     # move_to_goal_position(goal_position, goal_orientation)
 
 
-    # Get current end-effector position and orientation
+    goal_position = [Destination[object_number-1][1], Destination[object_number-1][2], -0.243]  # Adjust as needed
+    move_to_goal_position(goal_position, goal_orientation)
+
+     # Get current end-effector position and orientation
     current_end_effector_pose = get_current_end_effector_pose()
     current_position = current_end_effector_pose.p
     current_orientation = current_end_effector_pose.M
+        # Calculate the new orientation by converting to RPY, adding the deltas, and converting back
+    roll, pitch, yaw = current_orientation.GetRPY()
+    # goal_orientation = [roll + delta_orientation[0], pitch + delta_orientation[1], yaw + delta_orientation[2]]
 
+    print(f"Orientation - Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
+
+    # delta_position = [0, 0, 0]  # Change in position (x, y, z)
+    # delta_orientation = [0.0, 0.0, 0]  # Change in orientation (roll, pitch, yaw)
+
+    # # Calculate the goal position and orientation
+    # goal_position = [current_position.x() + delta_position[0],
+    #                  current_position.y() + delta_position[1],
+    #                  current_position.z() + delta_position[2]]
     
     print(f"x: {current_position.x()}, y: {current_position.y()}, z: {current_position.z()}")
-
-    # Calculate the new orientation by converting to RPY, adding the deltas, and converting back
-    # roll, pitch, yaw = current_orientation.GetRPY()
-
-    # print(f"Orientation - Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
 
     save_option = 0
     if save_option == 1:
@@ -435,12 +382,8 @@ def run():
         file_path = '/home/pal/tiago_ws/src/woa_tiago/project/Data.txt'
 
         # Values you want to replace the first two zeros with
-        value1 = current_position.x()  # Change this to your desired value
-        value2 = current_position.y()  # Change this to your desired value
-
-        # Open the file in append mode and add a new line with "0 0 0 0"
-        with open(file_path, 'a') as file:
-            file.write("\n0 0")  # Append new line at the end
+        value1 = goal_position[0]  # Change this to your desired value
+        value2 = goal_position[1]  # Change this to your desired value
 
         # Now, read all lines, modify the last one, and write everything back
         with open(file_path, 'r') as file:
@@ -448,9 +391,9 @@ def run():
 
         # Modify the last line
         last_line = lines[-1].strip().split(' ')  # Split the last line into a list of its values
-        last_line[0] = str(value1)  # Replace the first zero with value1
-        last_line[1] = str(value2)  # Replace the second zero with value2
-        lines[-1] = ' '.join(last_line)  # Join back into a string and assign back to the last line
+        last_line[2] = str(value1)  # Replace the first zero with value1
+        last_line[3] = str(value2)  # Replace the second zero with value2
+        lines[-1] = ' '.join(last_line) + '\n'  # Join back into a string and assign back to the last line
 
         # Write everything back to the file
         with open(file_path, 'w') as file:

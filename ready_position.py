@@ -11,8 +11,9 @@ from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryG
 import threading
 from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
 
+
 def sort_assemb_start():
-    global height_pub, arm_client, gripper_client
+    global height_pub, arm_client, gripper_client, head_client
     height_pub = rospy.Publisher('/torso_controller/command', JointTrajectory, queue_size=10)
     current_height = rospy.Subscriber("/joint_states", JointState, joint_states_callback)
     
@@ -20,21 +21,24 @@ def sort_assemb_start():
     arm_client.wait_for_server()
     rospy.loginfo("arm server connected.")
     
-    gripper_client = actionlib.SimpleActionClient('/parallel_gripper_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    gripper_client.wait_for_server()
+    # gripper_client = actionlib.SimpleActionClient('/parallel_gripper_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+    # gripper_client.wait_for_server()
+
+    # Initialize the action client for controlling the head's movement
+    head_client = actionlib.SimpleActionClient('/head_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+    head_client.wait_for_server()
+
+    # Rotate the head 30 degrees to the right and tilt it 30 degrees down
+    rotate_and_tilt_head(0, -10, 1)  # Note: Assuming negative tilt means downwards
 
     rospy.loginfo("gripper server connected.")
     rospy.wait_for_message("joint_states", JointState)
     rospy.sleep(1.0)
 
-    # adjust_height(0.4)
-
-    # right_joint_angles = [0.07, 0.06, 0.11, 0.04, 1.62, -0.14, 0.00]
-    # move_arm(right_joint_angles, 6)
-
-    # up_joint_angles = [0.07, 0.28, -1.43, 1.73, 0.17, -1.39, 0.24]
     up_joint_angles = [0.07, 0.47, -1.53, 1.74, 0.37, -1.37, 0.28]
-    move_arm(up_joint_angles, 6)
+    move_arm(up_joint_angles, 10)
+    
+
 
     rospy.loginfo("finish gesture")
     
@@ -45,31 +49,29 @@ def joint_states_callback(msg):
             index = msg.name.index("torso_lift_joint")
             current_torso_height = msg.position[index]
 
-def adjust_height(target_height):
-        rate = rospy.Rate(10)
-        duration = 6.0  # Duration for height adjustment
+def rotate_and_tilt_head(pan_degrees, tilt_degrees, duration):
+    global head_client
+    
+    # Convert degrees to radians for ROS
+    pan_radians = pan_degrees * 3.141592653589793 / 180.0
+    tilt_radians = tilt_degrees * 3.141592653589793 / 180.0
 
-        traj = JointTrajectory()
-        traj.joint_names = ["torso_lift_joint"]
+    # Define the goal for head movement
+    goal = FollowJointTrajectoryGoal()
+    trajectory = JointTrajectory()
+    trajectory.joint_names = ['head_1_joint', 'head_2_joint']  # Assuming these are the correct joint names
+    
+    point = JointTrajectoryPoint()
+    # Assign the new positions for pan (head_1_joint) and tilt (head_2_joint)
+    point.positions = [pan_radians, tilt_radians]  
+    point.time_from_start = rospy.Duration(duration)  # Adjust the duration as needed for your setup
+    trajectory.points.append(point)
+    
+    goal.trajectory = trajectory
 
+    head_client.send_goal(goal)
+    head_client.wait_for_result()
 
-        target_height = float(target_height)
-
-        # Initial position
-        start_point = JointTrajectoryPoint()
-        start_point.positions = [current_torso_height]
-        start_point.time_from_start = rospy.Duration(0)
-        traj.points.append(start_point)
-
-        # Target position
-        target_point = JointTrajectoryPoint()
-        target_point.positions = [target_height]
-        target_point.time_from_start = rospy.Duration(duration)
-        traj.points.append(target_point)
-
-        # Publish trajectory
-        height_pub.publish(traj)
-        time.sleep(duration)
 
 def move_arm(joint_angles, t):
         # Define the goal
@@ -99,25 +101,7 @@ def move_arm(joint_angles, t):
         else:
             rospy.loginfo("Arm did not complete before the timeout.")
     
-    
-def move_gripper(width, t):
-    goal = FollowJointTrajectoryGoal()
-    trajectory = JointTrajectory()
-    # goal.command.position = width
-    trajectory.joint_names = ['gripper_left_finger_joint', 'gripper_right_finger_joint']
-    point = JointTrajectoryPoint()
-    point.positions = width
-    point.time_from_start = rospy.Duration(t)
-    trajectory.points.append(point)
 
-    # Set the trajectory in the goal
-    goal.trajectory = trajectory
-    
-    gripper_client.send_goal(goal)
-    if gripper_client.wait_for_result():
-        rospy.loginfo("Gripper completed successfully.")
-    else:
-        rospy.loginfo("Gripper did not complete before the timeout.")
 
 if __name__ == '__main__':
     rospy.init_node('start_position')

@@ -11,9 +11,9 @@ from sensor_msgs.msg import JointState
 from scipy.spatial.transform import Rotation
 
 def rotationVectorToEulerAngles(rvec):
-    print("rvec", rvec)
+    # print("rvec", rvec)
     R, _ = cv2.Rodrigues(rvec)
-    print("R: ", R)
+    # print("R: ", R)
     sy = math.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0])
     singular = sy < 1e-6
     if not singular:
@@ -28,12 +28,12 @@ def rotationVectorToEulerAngles(rvec):
 
 
 def rotationVectorToQuaternion(rvec):
-    print("rvec", rvec)
+    # print("rvec", rvec)
     R, _ = cv2.Rodrigues(rvec)
-    print("R: ", R)
+    # print("R: ", R)
     r = Rotation.from_matrix(R)
     quat = r.as_quat()
-    print("quat: ", quat)
+    # print("quat: ", quat)
     return quat
 
 
@@ -71,20 +71,20 @@ class ArucoDetector:
             for i, corner in enumerate(corners):
                 aruco.drawDetectedMarkers(frame, corners, ids)
                 euler_angles = rotationVectorToEulerAngles(rvecs[i])
-                print(f"Marker ID: {ids[i][0]}")
+                # print(f"Marker ID: {ids[i][0]}")
                 marker_id = ids[i][0]
                 X_avg = int((corners[i][0][0][0]+corners[i][0][1][0])/2)
                 Y_avg = int((corners[i][0][0][1]+corners[i][0][2][1])/2)
-                print(f"Location (x, y): ({X_avg}, {Y_avg})")
+                # print(f"Location (x, y): ({X_avg}, {Y_avg})")
                 x = tvecs[i][0][0]
                 y = tvecs[i][0][1]
                 z = tvecs[i][0][2]
                 roll = euler_angles[0]
                 pitch = euler_angles[1]
                 yaw = euler_angles[2]
-                print(f"Location (x, y, z): ({tvecs[i][0][0]:.4f}, {tvecs[i][0][1]:.4f}, {tvecs[i][0][2]:.4f})")
-                print(X_avg, Y_avg)
-                print(f"Euler Angles (Roll, Pitch, Yaw): {euler_angles[0]:.4f}, {euler_angles[1]:.4f}, {euler_angles[2]:.4f}")
+                # print(f"Location (x, y, z): ({tvecs[i][0][0]:.4f}, {tvecs[i][0][1]:.4f}, {tvecs[i][0][2]:.4f})")
+                # print(X_avg, Y_avg)
+                # print(f"Euler Angles (Roll, Pitch, Yaw): {euler_angles[0]:.4f}, {euler_angles[1]:.4f}, {euler_angles[2]:.4f}")
 
                 if not self.aruco_published:
                     # publish aruco pose
@@ -92,7 +92,7 @@ class ArucoDetector:
                     pose_msg.name = [str(marker_id)]
                     pose_msg.position = [x, y, z, roll, pitch, yaw]
                     self.aruco_pub.publish(pose_msg)
-                    print("Published aruco pose")
+                    # print("Published aruco pose")
 
                 cv2.drawFrameAxes(frame, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1)
         return frame
