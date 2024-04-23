@@ -267,10 +267,12 @@ def run():
     # X, Y= 0.8, 0
 
     X_3D = 0.8935*X+0.0055*Y+0.064
+    X_3D = 0.8943*X+0.00416*Y+0.0679-0.01
     Y_3D = 0.0455*X+0.9401*Y-0.0194
     X_2D = 0.8846*X+0.07
     Y_2D = 0.9319*Y+0.01
     X_Poly = 3.8927*(X) +0.3982*(Y) -2.2658*X**2 -0.4216*X*Y +0.2446*Y**2 - 0.9099
+    X_Poly = 8.1795*(X) +0.6942*(Y) -5.5109*X**2 -0.5391*X*Y + 0.9012*Y**2 - 2.2965
     yaw = data[object_number-1][6]
     X_pose = X_3D
     Y_pose = Y_3D
@@ -281,14 +283,14 @@ def run():
     Destination_square = [0.753, 0.248]
     #Triangle 1
     final_triangle1 = [pi/2]
-    Destination_triangle1 = [Destination_square[0]+0.0327+0.003, Destination_square[1]+0.0496+0.007]
+    Destination_triangle1 = [Destination_square[0]+0.0327+0.005, Destination_square[1]+0.0496+0.007]
     #Triangle 2
     final_triangle2 = [-pi/2]
-    Destination_triangle2 = [Destination_square[0]-0.0327, Destination_square[1]+0.0496+0.005]
+    Destination_triangle2 = [Destination_square[0]-0.0327-0.002, Destination_square[1]+0.0496+0.007]
     #Trapezold
     final_trapezold = [-pi/4, 3*pi/4] #4
     # Destination_trapezold = [0.595, 0.05484949356562053]
-    Destination_trapezold = [Destination_square[0]-0.1675+0.013, Destination_square[1]-0.1903-0.005]
+    Destination_trapezold = [Destination_square[0]-0.1675+0.007, Destination_square[1]-0.1903-0.01]
 
     Destination_failure = [0.6, 0.2]
     
