@@ -13,11 +13,6 @@ import csv
 import sys
 from pal_interaction_msgs.msg import TtsAction, TtsGoal
 
-from geometry_msgs.msg import PoseStamped, Quaternion
-import tf.transformations  # For converting between different representations
-from std_msgs.msg import Float32MultiArray
-
-
 
 # Subscriber callback for updating current joint positions
 def joint_state_callback(msg):
@@ -198,66 +193,10 @@ class GenerationFunction():
             return "Error trying to say Hi."
 
 
-def publish_end_effector_pose():
-    current_pose = get_current_end_effector_pose()
-    pose_msg = PoseStamped()
-    pose_msg.header.stamp = rospy.Time.now()
-    pose_msg.header.frame_id = "torso_lift_link"  # Adjust the frame_id as needed
-
-    # Position
-    pose_msg.pose.position.x = current_pose.p.x()
-    pose_msg.pose.position.y = current_pose.p.y()
-    pose_msg.pose.position.z = current_pose.p.z()
-
-    # Orientation
-    current_orientation = current_pose.M
-    roll, pitch, yaw = current_orientation.GetRPY()
-    quaternion = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
-    pose_msg.pose.orientation = Quaternion(*quaternion)
-
-    ee_pose_pub.publish(pose_msg)
-
-def publish_state_end_effector(message):
-    number_msg = Float32MultiArray()
-    # number_msg.data = [1.0, 2.0, 3.0, 4.0]
-    number_msg.data = message
-    State_pub.publish(number_msg)
-    # rospy.loginfo("Published number array")
-
-
-def move_arm(joint_angles, t):
-        # Define the goal
-        goal = FollowJointTrajectoryGoal()
-        trajectory = JointTrajectory()
-
-        # Specify the joint names for arm and torso
-        trajectory.joint_names = [
-            'arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint', 
-            'arm_5_joint', 'arm_6_joint', 'arm_7_joint'
-        ]
-
-        # Define the joint target positions for arm and torso
-        point = JointTrajectoryPoint()
-        point.positions = joint_angles
-        point.time_from_start = rospy.Duration(t)
-        trajectory.points.append(point)
-
-        # Set the trajectory in the goal
-        goal.trajectory = trajectory
-
-        # Send the goal and wait for the result
-        rospy.loginfo("Sending goal for arm and torso movement...")
-        arm_client.send_goal(goal)
-        if arm_client.wait_for_result(rospy.Duration(t+1)):  # Increase timeout to ensure enough time for execution
-            rospy.loginfo("Arm completed successfully.")
-        else:
-            rospy.loginfo("Arm did not complete before the timeout.")
-
-
-
 def run():
-    global ik_solver_pos, desired_joint_positions, joint_names, number_of_joints, fk_solver, arm_pub, gripper_client, desired_frame, current_gripper_position, current_joint_positions, current_head_position, head_client, ee_pose_pub, State_pub, arm_client
+    global ik_solver_pos, desired_joint_positions, joint_names, number_of_joints, fk_solver, arm_pub, gripper_client, desired_frame, current_gripper_position, current_joint_positions, current_head_position, head_client
     global data
+
 
 
     # Load the robot model from the parameter server
@@ -304,10 +243,6 @@ def run():
     head_client = actionlib.SimpleActionClient('/head_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
     head_client.wait_for_server()
 
-    arm_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    arm_client.wait_for_server()
-    rospy.loginfo("arm server connected.")
-
     # Subscribe to the current joint state
     rospy.Subscriber('/joint_states', JointState, joint_state_callback)
     rospy.loginfo("Subscribed to joint states.")
@@ -316,13 +251,9 @@ def run():
     rospy.wait_for_message('/joint_states', JointState)
     rospy.sleep(1.0)
 
-    # Add a global publisher for end-effector pose
-    ee_pose_pub = rospy.Publisher('/end_effector_pose', PoseStamped, queue_size=1)
-    State_pub = rospy.Publisher('/ee_state_topic', Float32MultiArray, queue_size=1)
 
 
     System_input = int(sys.argv[1])
-    Puzzle_number = int (sys.argv[2])
     failure_number = int((System_input-1)/4)
     object_number = System_input % 4
     if object_number ==0:
@@ -331,99 +262,37 @@ def run():
     print("failure_number: ", failure_number)
 
 
+    print(object_number)
     X, Y= data[object_number-1][1], data[object_number-1][2]
     # X, Y= 0.8, 0
+
     X_3D = 0.8935*X+0.0055*Y+0.064
     X_3D = 0.8943*X+0.00416*Y+0.0679-0.01
     Y_3D = 0.0455*X+0.9401*Y-0.0194
-    X_2D = 0.888*X+0.0644
+    X_2D = 0.8846*X+0.07
     Y_2D = 0.9319*Y+0.01
     X_Poly = 3.8927*(X) +0.3982*(Y) -2.2658*X**2 -0.4216*X*Y +0.2446*Y**2 - 0.9099
+    X_Poly = 8.1795*(X) +0.6942*(Y) -5.5109*X**2 -0.5391*X*Y + 0.9012*Y**2 - 2.2965
     yaw = data[object_number-1][6]
     X_pose = X_3D
     Y_pose = Y_3D
 
     # Destination Locations
+    #Square
+    final_square = [-3*pi/4, -pi/4, pi/4, 3*pi/4] #Orientation
+    Destination_square = [0.753, 0.248]
+    #Triangle 1
+    final_triangle1 = [pi/2]
+    Destination_triangle1 = [Destination_square[0]+0.0327+0.005, Destination_square[1]+0.0496+0.007]
+    #Triangle 2
+    final_triangle2 = [-pi/2]
+    Destination_triangle2 = [Destination_square[0]-0.0327-0.002, Destination_square[1]+0.0496+0.007]
+    #Trapezold
+    final_trapezold = [-pi/4, 3*pi/4] #4
+    # Destination_trapezold = [0.595, 0.05484949356562053]
+    Destination_trapezold = [Destination_square[0]-0.1675+0.007, Destination_square[1]-0.1903-0.01]
 
-    if Puzzle_number == 1: #Cat
-        #Square
-        final_square = [-3*pi/4, -pi/4, pi/4, 3*pi/4] #Orientation
-        Destination_square = [0.753, 0.248]
-        #Triangle 1
-        final_triangle1 = [pi/2]
-        Destination_triangle1 = [Destination_square[0]+0.0327+0.005, Destination_square[1]+0.0496+0.007]
-        #Triangle 2
-        final_triangle2 = [-pi/2]
-        Destination_triangle2 = [Destination_square[0]-0.0327-0.002, Destination_square[1]+0.0496+0.007]
-        #Trapezold
-        final_trapezold = [-pi/4, 3*pi/4] #4
-        Destination_trapezold = [Destination_square[0]-0.1675+0.007, Destination_square[1]-0.1903-0.01]
-        # Destination of Failure
-        Destination_failure = [0.6, 0.2]
-
-    elif Puzzle_number == 2: #The rocket 
-        #Square
-        final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.07, 0.248-0.16]
-        #Triangle 1
-        final_triangle1 = [-3*pi/4]
-        Destination_triangle1 = [Destination_square[0]-0.0706, Destination_square[1]-0.015]
-        #Triangle 2
-        final_triangle2 = [pi/4]
-        Destination_triangle2 = [Destination_square[0]-0.0993, Destination_square[1]-0.0696-0.005]
-        #Trapezold
-        final_trapezold = [-pi/4, 3*pi/4] #4
-        Destination_trapezold = [Destination_square[0]+0.085, Destination_square[1]-0.0422]
-        # Destination of Failure
-        Destination_failure = [0.55, 0.3]
-
-    elif Puzzle_number == 4: #The rabbit
-        #Square
-        final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.136, 0.248-0.014]
-        #Triangle 1
-        final_triangle1 = [pi/2]
-        Destination_triangle1 = [Destination_square[0]+0.0213, Destination_square[1]-0.1269]
-        #Triangle 2
-        final_triangle2 = [pi/2]
-        Destination_triangle2 = [Destination_square[0]+0.056, Destination_square[1]-0.221]
-        #Trapezold
-        final_trapezold = [-3*pi/4, pi/4] #4
-        Destination_trapezold = [Destination_square[0]+0.065, Destination_square[1]+0.0848]
-        # Destination of Failure
-        Destination_failure = [0.6, 0]
-
-    elif Puzzle_number == 5: #The dog
-        #Square
-        final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.0488, 0.248+0.0706]
-        #Triangle 1
-        final_triangle1 = [pi]
-        Destination_triangle1 = [Destination_square[0]+0.079, Destination_square[1]-0.0454]
-        #Triangle 2
-        final_triangle2 = [pi/2]
-        Destination_triangle2 = [Destination_square[0]-0.1075, Destination_square[1]-0.3209]
-        #Trapezold
-        final_trapezold = [-pi/4, 3*pi/4] #4
-        Destination_trapezold = [Destination_square[0]-0.1272, Destination_square[1]-0.058]
-        # Destination of Failure
-        Destination_failure = [0.6, 0.2]
-
-    elif Puzzle_number == 3: #The turtle
-        #Square
-        final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.023, 0.248+0.06]
-        #Triangle 1
-        final_triangle1 = [-pi/2]
-        Destination_triangle1 = [Destination_square[0]-0.16, Destination_square[1]-0.135]
-        #Triangle 2
-        final_triangle2 = [-pi/2]
-        Destination_triangle2 = [Destination_square[0]-0.16, Destination_square[1]-0.275]
-        #Trapezold
-        final_trapezold = [-3*pi/4, pi/4] #4
-        Destination_trapezold = [Destination_square[0]-0.0414, Destination_square[1]-0.0846]
-        # Destination of Failure
-        Destination_failure = [0.6, 0.31]
+    Destination_failure = [0.6, 0.2]
     
 
     if object_number == 1:
@@ -439,19 +308,12 @@ def run():
             rotation = rotation1
             direction = direction1
             Destination = Destination_triangle1
-        elif rotation1 == rotation2:
-            if object_number == 2:
-                rotation = rotation1
-                direction = direction1
-                Destination = Destination_triangle1
-            elif object_number == 3:
-                rotation = rotation2
-                direction = direction2
-                Destination = Destination_triangle2
         else:
             rotation = rotation2
             direction = direction2
             Destination = Destination_triangle2
+
+    # rotation, direction = minimum_rotation_radians(yaw, final)
 
 
     print(f'Minimum rotation is {rotation:.2f} radians {direction}.')
@@ -466,6 +328,7 @@ def run():
     print("Yaw_goal: ", yaw_goal)
 
 
+    # yaw_goal =  pi/2
     if direction == 'counterclockwise':
         yaw_des = yaw_goal - rotation
     elif direction == 'clockwise':
@@ -483,94 +346,58 @@ def run():
     # goal_orientation = [0, 0, yaw_des]  # Adjust as needed
     # move_to_goal_position(goal_position, goal_orientation)
 
+
+
     update_head_position(-20, -40, 2)
     message = "It is my turn"
     gen_func = GenerationFunction(message)
     gen_func.speak()
     goal_orientation = [0, 0, yaw_goal]  # Adjust as needed
     goal_position = [X_pose, Y_pose, -0.2]  # Adjust as needed
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 0])
-    move_to_goal_position(goal_position, goal_orientation, 4)
-    rospy.sleep(4)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 1])
     update_gripper_position(0.09)
-    rospy.sleep(1)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 2])
+    move_to_goal_position(goal_position, goal_orientation, 5)
+    rospy.sleep(5)
     goal_position = [X_pose, Y_pose, -0.248]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 3)
-    rospy.sleep(3)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 3])
+    move_to_goal_position(goal_position, goal_orientation, 5)
+    rospy.sleep(5)
     update_gripper_position(0.03)
     rospy.sleep(1)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 4])
     if failure_number==1:
         rospy.sleep(15)
-        publish_end_effector_pose()
-        publish_state_end_effector([Puzzle_number, object_number, failure_number, 4.1])
-        message = "Sorry for the delay"
+        message = "Sorry for delay"
         gen_func = GenerationFunction(message)
         gen_func.speak()
     goal_position = [X_pose, Y_pose, -0.18]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 3)
-    rospy.sleep(3)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 5])
+    move_to_goal_position(goal_position, goal_orientation, 5)
+    rospy.sleep(5)
     if failure_number == 2:
         goal_position = [Destination_failure[0], Destination_failure[1], -0.18]  # Adjust as needed
         goal_orientation = [0, 0, yaw_des]  # Adjust as needed
         move_to_goal_position(goal_position, goal_orientation, 10)
         update_head_position(10, -40, 4)
-        rospy.sleep(7)
-        publish_end_effector_pose()
-        publish_state_end_effector([Puzzle_number, object_number, failure_number, 5.1])
+        rospy.sleep(10)
         goal_position = [Destination_failure[0], Destination_failure[1], -0.247]  # Adjust as needed
-        move_to_goal_position(goal_position, goal_orientation, 3)
-        rospy.sleep(4)
-        publish_end_effector_pose()
-        publish_state_end_effector([Puzzle_number, object_number, failure_number, 5.2])
+        move_to_goal_position(goal_position, goal_orientation, 5)
+        rospy.sleep(6)
         message = "Sorry I made a mistake"
         gen_func = GenerationFunction(message)
         gen_func.speak()
         goal_position = [Destination_failure[0], Destination_failure[1], -0.18]  # Adjust as needed
-        move_to_goal_position(goal_position, goal_orientation, 3)
-        rospy.sleep(3)
-        publish_end_effector_pose()
-        publish_state_end_effector([Puzzle_number, object_number, failure_number, 5.3])
+        move_to_goal_position(goal_position, goal_orientation, 5)
+        rospy.sleep(6)
     goal_position = [Destination[0], Destination[1], -0.18]  # Adjust as needed
     goal_orientation = [0, 0, yaw_des]  # Adjust as needed
     move_to_goal_position(goal_position, goal_orientation, 10)
     update_head_position(10, -40, 4)
-    rospy.sleep(7)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 6])
+    rospy.sleep(10)
     goal_position = [Destination[0], Destination[1], -0.247]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 3)
-    rospy.sleep(4)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 7])
+    move_to_goal_position(goal_position, goal_orientation, 5)
+    rospy.sleep(6)
     update_gripper_position(0.05)
     rospy.sleep(1)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 8])
     goal_position = [Destination[0], Destination[1], -0.18]  # Adjust as needed
-    move_to_goal_position(goal_position, goal_orientation, 3)
-    rospy.sleep(3)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 9])
+    move_to_goal_position(goal_position, goal_orientation, 5)
 
-    rospy.wait_for_message("joint_states", JointState)
-    rospy.sleep(0.3)
-    up_joint_angles = [0.07, 0.47, -1.53, 1.74, 0.37, -1.37, 0.28]
-    update_head_position(0, -10, 1)  # Note: Assuming negative tilt means downwards
-    move_arm(up_joint_angles, 10)
-    rospy.sleep(9)
-    publish_end_effector_pose()
-    publish_state_end_effector([Puzzle_number, object_number, failure_number, 10])
 
 
 
@@ -639,10 +466,10 @@ if __name__ == "__main__":
     rospy.init_node('tiago_arm_teleop_position')
     file_name = "aruco_data.csv"
     data = read_csv(file_name)
-    if len(data)==4:
-        run()
-    else:
-        print("Aruco file is not correct")
+    print(data)
+
+    run()
+
 
 
 

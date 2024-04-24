@@ -15,7 +15,7 @@ from play_motion_msgs.msg import PlayMotionAction, PlayMotionGoal
 def sort_assemb_start():
     global height_pub, arm_client, gripper_client, head_client
     height_pub = rospy.Publisher('/torso_controller/command', JointTrajectory, queue_size=10)
-    current_height = rospy.Subscriber("/joint_states", JointState, joint_states_callback)
+    # current_height = rospy.Subscriber("/joint_states", JointState, joint_states_callback)
     
     arm_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
     arm_client.wait_for_server()
@@ -29,7 +29,7 @@ def sort_assemb_start():
     head_client.wait_for_server()
 
     # Rotate the head 30 degrees to the right and tilt it 30 degrees down
-    rotate_and_tilt_head(0, -10, 1)  # Note: Assuming negative tilt means downwards
+    rotate_and_tilt_head(0, -10, 2)  # Note: Assuming negative tilt means downwards
 
     rospy.loginfo("gripper server connected.")
     rospy.wait_for_message("joint_states", JointState)
@@ -43,11 +43,11 @@ def sort_assemb_start():
     rospy.loginfo("finish gesture")
     
 
-def joint_states_callback(msg):
-        global current_torso_height
-        if "torso_lift_joint" in msg.name:
-            index = msg.name.index("torso_lift_joint")
-            current_torso_height = msg.position[index]
+# def joint_states_callback(msg):
+#         global current_torso_height
+#         if "torso_lift_joint" in msg.name:
+#             index = msg.name.index("torso_lift_joint")
+#             current_torso_height = msg.position[index]
 
 def rotate_and_tilt_head(pan_degrees, tilt_degrees, duration):
     global head_client

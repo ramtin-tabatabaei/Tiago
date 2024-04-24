@@ -107,7 +107,9 @@ class ArucoDetector:
             return
         frame_marked = self.detect_markers(cv_image, self.aruco_dict, self.parameters, self.cameraMatrix, self.distCoeffs)
         cv2.imshow('Frame with ArUco Markers', frame_marked)
-        cv2.waitKey(3)
+        if cv2.waitKey(3) & 0xFF == ord('q'):
+            rospy.signal_shutdown("User requested shutdown.")
+            cv2.destroyAllWindows()
 
     def shutdown_hook(self):
         rospy.loginfo(f"Shutting down {self.node_name}")

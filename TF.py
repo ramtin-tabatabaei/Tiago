@@ -34,6 +34,8 @@ class CoordinateTranslator:
         self.aruco_tf_pub = rospy.Publisher("/aruco_pose_tf", JointState, queue_size=1)
 
         self.aruco_sub = rospy.Subscriber("/aruco_pose", JointState, self.aruco_callback)
+        self.aruco_pub = rospy.Publisher("/aruco_pose_TF", JointState, queue_size=1)
+
 
         rospy.sleep(0)  # Wait for the listener to get ready
 
@@ -45,7 +47,7 @@ class CoordinateTranslator:
         self.csv_file = open('aruco_data.csv', "w", newline ='')
         self.csv_writer = writer(self.csv_file)
         self.csv_writer.writerow(['Id','x', 'y', 'z' , 'roll', 'pitch', 'yaw'])
-        rospy.sleep(0.1)
+        rospy.sleep(0.3)
 
 
         # # Initialize the action client for controlling the head's movement
@@ -124,6 +126,14 @@ class CoordinateTranslator:
                 print("TF Function failed")
             for i in range(4):
                 self.csv_writer.writerow(self.aruco_pose[i])
+                pose_msg = JointState()
+                # print()
+                pose_msg.name = [str(self.aruco_pose[i, 0])]
+                pose_msg.position = self.aruco_pose[i, 1:]
+                # pose_msg.position = [x, y, z, quat[0], quat[1], quat[2], quat[3]]
+                self.aruco_pub.publish(pose_msg)
+                rospy.sleep(0.1)
+
             self.csv_file.close()
             rospy.signal_shutdown("Done")
             return
