@@ -39,7 +39,7 @@ throttle_rgb_command = "rosrun topic_tools throttle messages /xtion/rgb/image_ra
 throttle_rgb_process = subprocess.Popen(throttle_rgb_command, shell=True, preexec_fn=os.setsid)
 
 # Adjusted topics with throttled camera topic
-topics = "/xtion/rgb/image_raw_throttled /joint_states /aruco_pose_TF /ee_state_topic /ee_state_topic"
+topics = "/xtion/rgb/image_raw_throttled /joint_states /aruco_pose_TF /ee_state_topic /end_effector_pose"
 
 # Define the command to start recording all topics to the named bag file
 command = f"rosbag record --lz4 {topics} -O {bag_file_name}"

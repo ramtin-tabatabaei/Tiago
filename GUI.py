@@ -33,13 +33,13 @@ def create_home_window():
     home_window.geometry("300x200")
     # Create buttons 1 to 4
     # Manually define each button
-    btn1 = tk.Button(home_window, text="Puzzle 1 (Cat)", command=lambda: button_pressed_home(1))
+    btn1 = tk.Button(home_window, text="Puzzle 1 (Rocket)", command=lambda: button_pressed_home(1))
     btn1.grid(row=0, column=0, padx=10, pady=10)
-    btn2 = tk.Button(home_window, text="Puzzle 2 (Rocket)", command=lambda: button_pressed_home(2))
+    btn2 = tk.Button(home_window, text="Puzzle 2 (Rabit)", command=lambda: button_pressed_home(2))
     btn2.grid(row=1, column=0, padx=10, pady=10)
     btn3 = tk.Button(home_window, text="Puzzle 3 (Turtle)", command=lambda: button_pressed_home(3))
     btn3.grid(row=2, column=0, padx=10, pady=10)
-    btn4 = tk.Button(home_window, text="Puzzle 4 (Rabit)", command=lambda: button_pressed_home(4))
+    btn4 = tk.Button(home_window, text="Puzzle 4 (Cat)", command=lambda: button_pressed_home(4))
     btn4.grid(row=3, column=0, padx=10, pady=10)
     # btn5 = tk.Button(home_window, text="Start Rosbag", command=lambda: run_in_thread(run_file, 'record_rosbag.py'))
     # btn5.grid(row=0, column=1, padx=10, pady=10)
@@ -86,13 +86,36 @@ def create_gui(Puzzle_number):
     btn15.grid(row=4, column=2, padx=10, pady=50)
     btn16 = tk.Button(window, text="Get Camera", command=lambda: run_in_thread(run_file, 'get_camera.py'))
     btn16.grid(row=5, column=0, padx=10, pady=0)
-    btn17 = tk.Button(window, text="TF Function", command=lambda: run_file('TF.py'))
+    btn17 = tk.Button(window, text="TF Function", command=lambda: run_file('TF2.py'))
     btn17.grid(row=5, column=1, padx=10, pady=0)
     btn18 = tk.Button(window, text="Ready Position", command=lambda: run_in_thread(run_file, 'ready_position.py'))
     btn18.grid(row=5, column=2, padx=10, pady=0)
+    btn18 = tk.Button(window, text="Talk: Wrong", command=lambda: run_in_thread(run_file, 'talk_wrongLocation.py'))
+    btn18.grid(row=6, column=0, padx=10, pady=0)
     # Additional 'Home' button to return to the home window
     home_btn = tk.Button(window, text="Home", command=go_home)
-    home_btn.grid(row=6, column=1, padx=10, pady=30)
+    home_btn.grid(row=6, column=2, padx=10, pady=30)
+
+
+    if Puzzle_number != 3:
+        btn1.grid(row=0, column=0, padx=10, pady=10)
+        btn5.grid(row=0, column=1, padx=10, pady=10)
+        btn9.grid(row=0, column=2, padx=10, pady=10)
+        btn4.grid(row=3, column=0, padx=10, pady=10)
+        btn8.grid(row=3, column=1, padx=10, pady=10)
+        btn12.grid(row=3, column=2, padx=10, pady=10)
+
+    else:
+        btn4.grid(row=0, column=0, padx=10, pady=10)
+        btn8.grid(row=0, column=1, padx=10, pady=10)
+        btn12.grid(row=0, column=2, padx=10, pady=10)
+        btn1.grid(row=3, column=0, padx=10, pady=10)
+        btn5.grid(row=3, column=1, padx=10, pady=10)
+        btn9.grid(row=3, column=2, padx=10, pady=10)
+
+
+
+
     window.mainloop()
 if __name__ == "__main__":
     create_home_window()

@@ -36,7 +36,7 @@ def sort_assemb_start():
     rospy.sleep(1.0)
 
     up_joint_angles = [0.07, 0.47, -1.53, 1.74, 0.37, -1.37, 0.28]
-    move_arm(up_joint_angles, 10)
+    move_arm(up_joint_angles, 6)
     
 
 
