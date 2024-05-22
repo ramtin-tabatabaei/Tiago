@@ -11,7 +11,7 @@ class GenerationFunction():
     def say_hi(self):
         try:
             self.goal.rawtext.text = "You have put the piece in a wrong location."
-            self.goal.rawtext.lang_id = "en_GB"
+            self.goal.rawtext.lang_id = "fr_GB"
             self.client.send_goal_and_wait(self.goal)
             # rospy.loginfo("GPT response is: Hi")
             # return "Hi"

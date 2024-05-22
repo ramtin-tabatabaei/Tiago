@@ -317,7 +317,7 @@ def run():
     # goal_position = [X_3D, Y_3D, -0.18]  # Adjust as needed
     # move_to_goal_position(goal_position, goal_orientation)
     # rospy.sleep(5)
-    goal_position = [0.72, -0.172, -0.2]  # Adjust as needed
+    goal_position = [0.72, -0.172, -0.26]  # Adjust as needed
     goal_orientation = [0, 0, pi/2]  # Adjust as needed
     move_to_goal_position(goal_position, goal_orientation)
     # rospy.sleep(5)

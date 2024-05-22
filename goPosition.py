@@ -417,14 +417,21 @@ def run():
 
     X, Y= data[object_number-1][1], data[object_number-1][2]
     # X, Y= 0.8, 0
-    X_3D = 0.8935*X+0.0055*Y+0.064
+    #X_3D = 0.8935*X+0.0055*Y+0.064
     # X_3D = 0.8943*X+0.00416*Y+0.0679-0.01
     X_3D = 0.8790*X+0.0162*Y + 0.073
-    if X>0.61:
-        if Y>-0.15:
-            X_3D = X_3D + 0.006
+    print(X, Y)
+    if X>0.62:
+        if Y>-0.18:
+            X_3D = X_3D + 0.006  #Up Left
         else: 
-            X_3D = X_3D + 0.003
+            X_3D = X_3D + 0.009  #Up Right
+    else:
+        if Y<-0.18:
+            X_3D = X_3D + 0.004  # Down Right
+        else:
+            X_3D = X_3D + 0.001 #Down Left
+
 
     Y_3D = 0.0455*X+0.9401*Y-0.0194
     X_2D = 0.888*X+0.0644
@@ -432,7 +439,7 @@ def run():
     X_Poly = 3.8927*(X) +0.3982*(Y) -2.2658*X**2 -0.4216*X*Y +0.2446*Y**2 - 0.9099
     yaw = data[object_number-1][6]
     X_pose = X_3D
-    Y_pose = Y_3D-0.002
+    Y_pose = Y_3D-0.004
 
     # Destination Locations
 
@@ -442,13 +449,13 @@ def run():
         Destination_square = [0.753-0.009, 0.248+0.011+0.002]
         #Triangle 1
         final_triangle1 = [pi/2]
-        Destination_triangle1 = [Destination_square[0]+0.0327-0.003, Destination_square[1]+0.0496+0.017-0.002]
+        Destination_triangle1 = [Destination_square[0]+0.0329, Destination_square[1]+0.0496+0.009]
         #Triangle 2
         final_triangle2 = [-pi/2]
-        Destination_triangle2 = [Destination_square[0]-0.0327-0.011+0.002, Destination_square[1]+0.0496+0.015-0.002]
+        Destination_triangle2 = [Destination_square[0]-0.0327-0.011+0.002, Destination_square[1]+0.0496+0.007]
         #Trapezold
         final_trapezold = [-pi/4, 3*pi/4] #4
-        Destination_trapezold = [Destination_square[0]-0.175, Destination_square[1]-0.1903-0.015-0.002]
+        Destination_trapezold = [Destination_square[0]-0.162, Destination_square[1]-0.1903-0.015-0.002]
         # Destination of Failure
         Destination_failure = [0.6, 0.2]
         Destination_failure = [Destination_square[0]-0.185, Destination_square[1]-0.1903]
@@ -456,32 +463,32 @@ def run():
     elif Puzzle_number == 1: #The rocket 
         #Square
         final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.077, 0.248-0.16+0.01]
+        Destination_square = [0.753-0.077+0.005, 0.248-0.16+0.01]
         #Triangle 1
         final_triangle1 = [-3*pi/4]
-        Destination_triangle1 = [Destination_square[0]-0.0709, Destination_square[1]-0.013]
+        Destination_triangle1 = [Destination_square[0]-0.062-0.005, Destination_square[1]-0.02]
         #Triangle 2
         final_triangle2 = [pi/4]
-        Destination_triangle2 = [Destination_square[0]-0.097-0.008, Destination_square[1]-0.0696-0.003]
+        Destination_triangle2 = [Destination_square[0]-0.097, Destination_square[1]-0.0696-0.008]
         #Trapezold
         final_trapezold = [-pi/4, 3*pi/4] #4
-        Destination_trapezold = [Destination_square[0]+0.088-0.004, Destination_square[1]-0.0422+0.005]
+        Destination_trapezold = [Destination_square[0]+0.092-0.004, Destination_square[1]-0.0422+0.007]
         # Destination of Failure
-        Destination_failure = [Destination_square[0]+0.088-0.004, Destination_square[1]-0.0422+0.005]
+        Destination_failure = [Destination_square[0]+0.092-0.004, Destination_square[1]-0.0422+0.005]
 
     elif Puzzle_number == 2: #The rabbit
         #Square
         final_square = [-pi, -pi/2, 0, pi/2] #Orientation
-        Destination_square = [0.753-0.136-0.008-0.008, 0.248-0.002]
+        Destination_square = [0.753-0.136-0.008-0.003, 0.248-0.002]
         #Triangle 1
         final_triangle1 = [pi/2]
-        Destination_triangle1 = [Destination_square[0]+0.019, Destination_square[1]-0.124]
+        Destination_triangle1 = [Destination_square[0]+0.021, Destination_square[1]-0.124]
         #Triangle 2
         final_triangle2 = [pi/2]
-        Destination_triangle2 = [Destination_square[0]+0.059, Destination_square[1]-0.221+0.002]
+        Destination_triangle2 = [Destination_square[0]+0.070, Destination_square[1]-0.221+0.002]
         #Trapezold
         final_trapezold = [-3*pi/4, pi/4] #4
-        Destination_trapezold = [Destination_square[0]+0.07, Destination_square[1]+0.0848+0.006]
+        Destination_trapezold = [Destination_square[0]+0.068, Destination_square[1]+0.0848+0.006]
         # Destination of Failure
         # Destination_failure = [0.53, 0.12]
         Destination_failure = [Destination_square[0]+0.07, Destination_square[1]+0.0848+0.006]
@@ -508,13 +515,13 @@ def run():
         Destination_square = [0.753-0.026+0.002, 0.248+0.075+0.002]
         #Triangle 1
         final_triangle1 = [-pi/2]
-        Destination_triangle1 = [Destination_square[0]-0.16, Destination_square[1]-0.13-0.002]
+        Destination_triangle1 = [Destination_square[0]-0.158, Destination_square[1]-0.13-0.004]
         #Triangle 2
         final_triangle2 = [-pi/2]
-        Destination_triangle2 = [Destination_square[0]-0.16, Destination_square[1]-0.273-0.002]
+        Destination_triangle2 = [Destination_square[0]-0.158, Destination_square[1]-0.28]
         #Trapezold
         final_trapezold = [-3*pi/4, pi/4] #4
-        Destination_trapezold = [Destination_square[0]-0.0414, Destination_square[1]-0.081]
+        Destination_trapezold = [Destination_square[0]-0.038, Destination_square[1]-0.085]
         # Destination of Failure
         #Destination_failure = [0.6, 0.31]
         Destination_failure = [0.753-0.026+0.002, 0.248+0.094]
@@ -582,7 +589,7 @@ def run():
     update_head_position(-20, -40, 2)
     message = "It is my turn"
     gen_func = GenerationFunction(message)
-    # gen_func.speak()
+    gen_func.speak()
     goal_orientation = [0, 0, yaw_goal]  # Adjust as needed
     goal_position = [X_pose, Y_pose, -0.2]  # Adjust as needed
     publish_end_effector_pose()
@@ -630,6 +637,7 @@ def run():
         rospy.sleep(4)
         publish_end_effector_pose()
         publish_state_end_effector([Puzzle_number, object_number, failure_number, 5.2])
+        rospy.sleep(4)
         if Paricipant_ID < 13:
             message = "Sorry I made a mistake"
             gen_func = GenerationFunction(message)
@@ -664,9 +672,7 @@ def run():
     rospy.wait_for_message("joint_states", JointState)
     rospy.sleep(0.3)
     up_joint_angles = [0.07, 0.47, -1.53, 1.74, 0.37, -1.37, 0.28]
-    # update_head_position(0, -10, 1)  # Note: Assuming negative tilt means downwards
-    # move_arm(up_joint_angles, 6)
-    move_arm_with_interp(up_joint_angles, 6)
+    move_arm_with_interp(up_joint_angles, 5)
     update_head_position(0, -10, 1)  # Note: Assuming negative tilt means downwards
     if Puzzle_number !=3 and object_number !=4:
         message = "Now, it is your turn"
@@ -680,26 +686,12 @@ def run():
         message = "Puzzles are finished!"
     gen_func = GenerationFunction(message)
     gen_func.speak()
-    rospy.sleep(5)
+    rospy.sleep(1)
     publish_end_effector_pose()
     publish_state_end_effector([Puzzle_number, object_number, failure_number, 10])
 
 
 
-    # goal_position = [X, Y, -0.2]  # Adjust as needed
-    # print(yaw_des)
-
-    # Move to the specified goal position
-    # move_to_goal_position(goal_position, goal_orientation)
-    # update_gripper_position(0.09)
-
-    # rospy.sleep(2)
-
-    # goal_position = [0.85, -0.1, -0.2]  # Adjust as needed
-    # goal_orientation = [0, 0, 0]  # Adjust as needed
-
-    # # Move to the specified goal position
-    # move_to_goal_position(goal_position, goal_orientation)
 
 
     # Get current end-effector position and orientation
